@@ -9,6 +9,5 @@ public class Bob extends NeedhamSchroeder {
 
     @Override
     public void run() {
-
     }
 }
