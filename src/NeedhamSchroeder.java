@@ -3,18 +3,21 @@ import sun.misc.BASE64Encoder;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.Key;
+import java.util.Base64;
 
 public abstract class NeedhamSchroeder implements Runnable {
     private SecretKey token;
     private int portNum;
     private String nsUserName;
     private ServerSocket socket;
+    static String MESS_FLAG = "|PIPE|";
 
 
     NeedhamSchroeder(SecretKey token, int portNum, String nsUserName, ServerSocket socket) {
@@ -61,26 +64,50 @@ public abstract class NeedhamSchroeder implements Runnable {
         return receivedMessage;
     }
 
+    String receiveEncryptedMessage(Socket messageSocket) {
+        String receivedMessage = receiveUnencryptedMessage(messageSocket);
+        return decryptWithMyKey(receivedMessage);
+    }
+
     String receiveEncryptedMessage(Socket messageSocket, Key key) {
         String receivedMessage = receiveUnencryptedMessage(messageSocket);
         return decryptWithAnotherKey(receivedMessage, key);
     }
 
-    String receiveAllMessages(Socket messageSocket) {
+    String receiveAllMessagesNoEncryption(Socket messageSocket) {
         StringBuilder receivedMessages = new StringBuilder();
+        receiveAll(messageSocket, receivedMessages);
+        System.out.printf("Received messages: %s\n", receivedMessages);
+        return receivedMessages.toString();
+    }
+
+    String receiveAllMessagesDecrypted(Socket messageSocket) {
+        StringBuilder receivedMessages = new StringBuilder();
+        receiveAll(messageSocket, receivedMessages);
+        System.out.printf("Received messages: %s\n", receivedMessages);
+        return decryptWithMyKey(receivedMessages.toString());
+    }
+
+    private void receiveAll(Socket messageSocket, StringBuilder receivedMessages) {
         try {
             BufferedReader readInFromServer = new BufferedReader(new InputStreamReader(messageSocket.getInputStream()));
             while(true) {
                 receivedMessages.append(readInFromServer.readLine());
-                if (readInFromServer.ready()) {
+                if (!receivedMessages.toString().contains("|KILL_MESS|") || readInFromServer.ready()) {
                     break;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.printf("Received messages: %s\n", receivedMessages);
-        return receivedMessages.toString();
+    }
+
+    String buildMessageWithFlag(String... messageArr) {
+        return String.join(MESS_FLAG, messageArr);
+    }
+
+    String buildSentMessageWithFlag(String... messageArr) {
+        return String.join(MESS_FLAG, messageArr) + "\n";
     }
 
     String encrypt(String message, Key key) {
@@ -95,6 +122,11 @@ public abstract class NeedhamSchroeder implements Runnable {
             e.printStackTrace();
         }
         return encryptedMess;
+    }
+
+    Key sessionKey(String key) {
+        byte[] decodedKey = Base64.getDecoder().decode(key);
+        return new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
     }
 
     String decryptWithMyKey(String message) {
