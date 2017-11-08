@@ -1,9 +1,8 @@
-import sun.misc.BASE64Encoder;
-
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Base64;
 import java.util.HashMap;
 
 public class Cathy extends NeedhamSchroeder {
@@ -26,7 +25,7 @@ public class Cathy extends NeedhamSchroeder {
             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
             keyGen.init(128);
 
-            String key = new BASE64Encoder().encode(keyGen.generateKey().getEncoded());
+            String key = Base64.getEncoder().encodeToString(keyGen.generateKey().getEncoded());
 
             String bobMess = buildMessageWithFlag(receivedSplit[0], key);
 

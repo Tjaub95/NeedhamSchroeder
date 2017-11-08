@@ -1,6 +1,3 @@
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
-
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -64,11 +61,6 @@ public abstract class NeedhamSchroeder implements Runnable {
         return receivedMessage;
     }
 
-    String receiveEncryptedMessage(Socket messageSocket) {
-        String receivedMessage = receiveUnencryptedMessage(messageSocket);
-        return decryptWithMyKey(receivedMessage);
-    }
-
     String receiveEncryptedMessage(Socket messageSocket, Key key) {
         String receivedMessage = receiveUnencryptedMessage(messageSocket);
         return decryptWithAnotherKey(receivedMessage, key);
@@ -76,31 +68,16 @@ public abstract class NeedhamSchroeder implements Runnable {
 
     String receiveAllMessagesNoEncryption(Socket messageSocket) {
         StringBuilder receivedMessages = new StringBuilder();
-        String mess = receiveAll(messageSocket, receivedMessages);
-        System.out.printf("Received messages: %s\n\n", mess);
-        return mess;
-    }
-
-    String receiveAllMessagesDecrypted(Socket messageSocket) {
-        StringBuilder receivedMessages = new StringBuilder();
-        String mess = receiveAll(messageSocket, receivedMessages);
-        System.out.printf("Received messages: %s\n\n", mess);
-        return decryptWithMyKey(mess);
-    }
-
-    private String receiveAll(Socket messageSocket, StringBuilder receivedMessages) {
         try {
             BufferedReader readInFromServer = new BufferedReader(new InputStreamReader(messageSocket.getInputStream()));
-            while(true) {
+
+            do {
                 receivedMessages.append(readInFromServer.readLine());
-                if (!receivedMessages.toString().contains("<KILL_MESS>") || readInFromServer.ready()) {
-                    break;
-                }
-            }
+            } while(!receivedMessages.toString().contains("<KILL_MESS>") || readInFromServer.ready());
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        System.out.printf("Received messages: %s\n\n", receivedMessages.toString());
         return receivedMessages.toString().replace("<KILL_MESS>", "");
     }
 
@@ -117,7 +94,7 @@ public abstract class NeedhamSchroeder implements Runnable {
         try {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.ENCRYPT_MODE, key);
-            byte[] encipheredBytes = cipher.doFinal(message.getBytes());
+            byte[] encipheredBytes = cipher.doFinal(message.getBytes("UTF-8"));
             encryptedMess = Base64.getEncoder().encodeToString(encipheredBytes);
             System.out.printf("Encrypted message is: %s\n\n", encryptedMess);
         } catch (Exception e) {
@@ -136,7 +113,7 @@ public abstract class NeedhamSchroeder implements Runnable {
         try {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, getToken());
-            byte[] decodedVal = Base64.getDecoder().decode(message.getBytes());
+            byte[] decodedVal = Base64.getDecoder().decode(message.getBytes("UTF-8"));
             byte[] decryptedCipher = cipher.doFinal(decodedVal);
             decryptedMessage = new String(decryptedCipher);
             System.out.printf("Decrypted message is: %s\n\n", decryptedMessage);
@@ -151,7 +128,7 @@ public abstract class NeedhamSchroeder implements Runnable {
         try {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, key);
-            byte[] decodedVal = Base64.getDecoder().decode(message.getBytes());
+            byte[] decodedVal = Base64.getDecoder().decode(message.getBytes("UTF-8"));
             byte[] decryptedCipher = cipher.doFinal(decodedVal);
             decryptedMessage = new String(decryptedCipher);
             System.out.printf("Decrypted message is: %s\n\n", decryptedMessage);

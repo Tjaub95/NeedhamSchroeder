@@ -26,9 +26,7 @@ public class Bob extends NeedhamSchroeder {
             Random rand = new Random();
             String nonce = String.valueOf(rand.nextInt());
 
-            nonce = encrypt(nonce, key);
-
-            sendUnencryptedMessage(nonce + "\r", sending);
+            sendUnencryptedMessage(encrypt(nonce, key) + "\r", sending);
 
             String receivedNonce = receiveUnencryptedMessage(sending);
 
