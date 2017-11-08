@@ -16,8 +16,8 @@ public class Main {
             Bob bob = new Bob(bobSecKey, 1001, "Bob", new ServerSocket(1001));
             Cathy cathy = new Cathy(1000, "Cathy", new ServerSocket(1000));
 
-            cathy.getSecretKeyHashMap().put("Alice", aliceSecKey);
-            cathy.getSecretKeyHashMap().put("Bob", bobSecKey);
+            cathy.getSecretKeyHashMap().put(alice.getNsUserName(), aliceSecKey);
+            cathy.getSecretKeyHashMap().put(bob.getNsUserName(), bobSecKey);
 
             new Thread(alice).start();
             new Thread(bob).start();

@@ -12,7 +12,7 @@ public class Alice extends NeedhamSchroeder {
 
     @Override
     public void run() {
-        System.out.printf("%s : has started", this.getNsUserName());
+        System.out.printf("%s has started\n", this.getNsUserName());
 
         try {
             Socket sendingSocket = new Socket("localhost", 1000);
@@ -24,11 +24,13 @@ public class Alice extends NeedhamSchroeder {
 
             sendUnencryptedMessage(message, sendingSocket);
 
-            String receivedMess = receiveAllMessagesDecrypted(sendingSocket);
+            String receivedMess = receiveAllMessagesNoEncryption(sendingSocket);
+
+            String decryptedMess = decryptWithMyKey(receivedMess);
 
             sendingSocket.close();
 
-            String[] decryptedFields = receivedMess.split(NeedhamSchroeder.MESS_FLAG);
+            String[] decryptedFields = decryptedMess.split(NeedhamSchroeder.MESS_FLAG);
 
             Key key = sessionKey(decryptedFields[3]);
 

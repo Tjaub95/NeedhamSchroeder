@@ -17,7 +17,7 @@ public abstract class NeedhamSchroeder implements Runnable {
     private int portNum;
     private String nsUserName;
     private ServerSocket socket;
-    static String MESS_FLAG = "|PIPE|";
+    static String MESS_FLAG = "<PIPE>";
 
 
     NeedhamSchroeder(SecretKey token, int portNum, String nsUserName, ServerSocket socket) {
@@ -30,7 +30,7 @@ public abstract class NeedhamSchroeder implements Runnable {
     void sendUnencryptedMessage(String message, Socket messageSocket) {
         try {
             DataOutputStream sendMess = new DataOutputStream(messageSocket.getOutputStream());
-            System.out.printf("Unencrypted Message is: %s\n", message);
+            System.out.printf("Unencrypted Message is: %s\n\n", message);
             sendMess.writeBytes(message);
         } catch (Exception e) {
             e.printStackTrace();
@@ -41,7 +41,7 @@ public abstract class NeedhamSchroeder implements Runnable {
         try {
             DataOutputStream sendMess = new DataOutputStream(messageSocket.getOutputStream());
             String encryptedMess = encrypt(message, key);
-            System.out.printf("Encrypted Message is: %s\n", encryptedMess);
+            System.out.printf("Encrypted Message is: %s\n\n", encryptedMess);
             sendMess.writeBytes(encryptedMess + "\r");
         } catch (Exception e) {
             e.printStackTrace();
@@ -60,7 +60,7 @@ public abstract class NeedhamSchroeder implements Runnable {
             e.printStackTrace();
         }
 
-        System.out.printf("Received message: %s\n", receivedMessage);
+        System.out.printf("Received message: %s\n\n", receivedMessage);
         return receivedMessage;
     }
 
@@ -76,30 +76,32 @@ public abstract class NeedhamSchroeder implements Runnable {
 
     String receiveAllMessagesNoEncryption(Socket messageSocket) {
         StringBuilder receivedMessages = new StringBuilder();
-        receiveAll(messageSocket, receivedMessages);
-        System.out.printf("Received messages: %s\n", receivedMessages);
-        return receivedMessages.toString();
+        String mess = receiveAll(messageSocket, receivedMessages);
+        System.out.printf("Received messages: %s\n\n", mess);
+        return mess;
     }
 
     String receiveAllMessagesDecrypted(Socket messageSocket) {
         StringBuilder receivedMessages = new StringBuilder();
-        receiveAll(messageSocket, receivedMessages);
-        System.out.printf("Received messages: %s\n", receivedMessages);
-        return decryptWithMyKey(receivedMessages.toString());
+        String mess = receiveAll(messageSocket, receivedMessages);
+        System.out.printf("Received messages: %s\n\n", mess);
+        return decryptWithMyKey(mess);
     }
 
-    private void receiveAll(Socket messageSocket, StringBuilder receivedMessages) {
+    private String receiveAll(Socket messageSocket, StringBuilder receivedMessages) {
         try {
             BufferedReader readInFromServer = new BufferedReader(new InputStreamReader(messageSocket.getInputStream()));
             while(true) {
                 receivedMessages.append(readInFromServer.readLine());
-                if (!receivedMessages.toString().contains("|KILL_MESS|") || readInFromServer.ready()) {
+                if (!receivedMessages.toString().contains("<KILL_MESS>") || readInFromServer.ready()) {
                     break;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        return receivedMessages.toString().replace("<KILL_MESS>", "");
     }
 
     String buildMessageWithFlag(String... messageArr) {
@@ -116,8 +118,8 @@ public abstract class NeedhamSchroeder implements Runnable {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] encipheredBytes = cipher.doFinal(message.getBytes());
-            encryptedMess = new BASE64Encoder().encode(encipheredBytes);
-            System.out.printf("Encrypted message is: %s\n", encryptedMess);
+            encryptedMess = Base64.getEncoder().encodeToString(encipheredBytes);
+            System.out.printf("Encrypted message is: %s\n\n", encryptedMess);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -134,9 +136,10 @@ public abstract class NeedhamSchroeder implements Runnable {
         try {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, getToken());
-            byte[] decryptedCipher = cipher.doFinal(new BASE64Decoder().decodeBuffer(message));
+            byte[] decodedVal = Base64.getDecoder().decode(message.getBytes());
+            byte[] decryptedCipher = cipher.doFinal(decodedVal);
             decryptedMessage = new String(decryptedCipher);
-            System.out.printf("Decrypted message is: %s\n", decryptedMessage);
+            System.out.printf("Decrypted message is: %s\n\n", decryptedMessage);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -148,9 +151,10 @@ public abstract class NeedhamSchroeder implements Runnable {
         try {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, key);
-            byte[] decryptedCipher = cipher.doFinal(new BASE64Decoder().decodeBuffer(message));
+            byte[] decodedVal = Base64.getDecoder().decode(message.getBytes());
+            byte[] decryptedCipher = cipher.doFinal(decodedVal);
             decryptedMessage = new String(decryptedCipher);
-            System.out.printf("Decrypted message is: %s\n", decryptedMessage);
+            System.out.printf("Decrypted message is: %s\n\n", decryptedMessage);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -164,31 +168,11 @@ public abstract class NeedhamSchroeder implements Runnable {
         return token;
     }
 
-    public void setToken(SecretKey token) {
-        this.token = token;
-    }
-
-    public int getPortNum() {
-        return portNum;
-    }
-
-    public void setPortNum(int portNum) {
-        this.portNum = portNum;
-    }
-
     public String getNsUserName() {
         return nsUserName;
     }
 
-    public void setNsUserName(String nsUserName) {
-        this.nsUserName = nsUserName;
-    }
-
     public ServerSocket getSocket() {
         return socket;
-    }
-
-    public void setSocket(ServerSocket socket) {
-        this.socket = socket;
     }
 }

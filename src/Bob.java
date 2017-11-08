@@ -12,22 +12,29 @@ public class Bob extends NeedhamSchroeder {
 
     @Override
     public void run() {
-        System.out.printf("%s : has started", this.getNsUserName());
+        System.out.printf("%s has started\n", this.getNsUserName());
         try {
             Socket sending = getSocket().accept();
 
-            String decryptedMessage = receiveEncryptedMessage(sending);
+            String receivedMessage = receiveUnencryptedMessage(sending);
+
+            String decryptedMessage = decryptWithMyKey(receivedMessage);
 
             String[] decryptedFields = decryptedMessage.split(NeedhamSchroeder.MESS_FLAG);
             Key key = sessionKey(decryptedFields[1]);
 
             Random rand = new Random();
-            String nonce = encrypt(String.valueOf(rand.nextInt()), key);
+            String nonce = String.valueOf(rand.nextInt());
+
+            nonce = encrypt(nonce, key);
 
             sendUnencryptedMessage(nonce + "\r", sending);
-            String receivedNonce = receiveEncryptedMessage(sending, key);
 
-            if (Integer.parseInt(nonce) - Integer.parseInt(receivedNonce) == 1) {
+            String receivedNonce = receiveUnencryptedMessage(sending);
+
+            String decryptedNonce = decryptWithAnotherKey(receivedNonce, key);
+
+            if (Integer.parseInt(nonce) - Integer.parseInt(decryptedNonce) == 1) {
                 System.out.println("Needham Schroeder Key Exchange Successful");
 
                 for (int i = 1; i < 4; i++) {

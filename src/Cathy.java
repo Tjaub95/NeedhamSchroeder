@@ -15,7 +15,7 @@ public class Cathy extends NeedhamSchroeder {
 
     @Override
     public void run() {
-        System.out.printf("%s : has started", this.getNsUserName());
+        System.out.printf("%s has started\n\n", this.getNsUserName());
         try {
             Socket caSocket = getSocket().accept();
 
@@ -28,13 +28,15 @@ public class Cathy extends NeedhamSchroeder {
 
             String key = new BASE64Encoder().encode(keyGen.generateKey().getEncoded());
 
-            String bobMess = encrypt(buildMessageWithFlag(receivedSplit[0], key), secretKeyHashMap.get(receivedSplit[1]));
+            String bobMess = buildMessageWithFlag(receivedSplit[0], key);
+
+            bobMess = encrypt(bobMess, getSecretKeyHashMap().get(receivedSplit[1]));
 
             String resp = buildMessageWithFlag(receivedSplit[0], receivedSplit[1], receivedSplit[2], key, bobMess);
 
             String encryptedResp = encrypt(resp, secretKeyHashMap.get(receivedSplit[0]));
 
-            sendUnencryptedMessage(encryptedResp + "|KILL_MESS|\r", caSocket);
+            sendUnencryptedMessage(encryptedResp + "<KILL_MESS>\r", caSocket);
         } catch (Exception e) {
             e.printStackTrace();
         }
